@@ -1,123 +1,181 @@
 import streamlit as st
-import json
+from datetime import datetime
 import smtplib
-from email.message import EmailMessage
+from email.mime.text import MIMEText
 
-# Sample hospital data
-hospital_data = [
-    {"name": "Apollo Hospital", "location": "Hyderabad", "contact": "040-12345678"},
-    {"name": "Yashoda Hospital", "location": "Secunderabad", "contact": "040-87654321"},
-    {"name": "KIMS Hospital", "location": "Hyderabad", "contact": "040-11223344"},
-    {"name": "AIIMS", "location": "Delhi", "contact": "011-22334455"},
-    {"name": "NIMS", "location": "Hyderabad", "contact": "040-44556677"},
+# --------------------------
+# Session State to Save Previous Symptoms
+# --------------------------
+if "prev_symptoms" not in st.session_state:
+    st.session_state.prev_symptoms = []
+
+# --------------------------
+# Data Setup
+# --------------------------
+symptoms_list = [
+    "fever", "headache", "fatigue", "nausea", "vomiting", "cough", "cold", "muscle_pain",
+    "joint_pain", "rash", "abdominal_pain", "loss_of_appetite", "diarrhea", "constipation",
+    "chills", "sore_throat", "weight_loss", "night_sweats", "breathlessness", "chest_pain",
+    "vision_problem", "excessive_thirst", "frequent_urination", "bleeding_gums",
+    "unexplained_bleeding", "itching", "yellow_skin", "swollen_lymph_nodes",
+    "seizures", "speech_difficulty", "paralysis", "confusion", "memory_loss"
 ]
 
-# Sample disease information
-disease_info = {
-    "Malaria": "Caused by Plasmodium parasites transmitted by mosquito bites.",
-    "Diabetes": "A chronic condition that affects how your body processes blood sugar.",
-    "Cold": "A viral infectious disease of the upper respiratory tract.",
-    "Flu": "A contagious respiratory illness caused by influenza viruses.",
-    "Typhoid": "A bacterial infection due to Salmonella typhi spread through contaminated food and water."
+disease_symptom_map = {
+    "Malaria": ["fever", "chills", "sweating", "headache", "nausea", "vomiting", "muscle_pain"],
+    "Dengue": ["fever", "headache", "joint_pain", "muscle_pain", "rash", "nausea", "vomiting"],
+    "Chickenpox": ["fever", "rash", "fatigue", "itching", "headache", "loss_of_appetite"],
+    "Typhoid": ["fever", "abdominal_pain", "headache", "diarrhea", "loss_of_appetite"],
+    "Pneumonia": ["fever", "cough", "chest_pain", "breathlessness", "fatigue"],
+    "Cancer": ["weight_loss", "fatigue", "unexplained_bleeding", "vision_problem", "swollen_lymph_nodes"],
+    "Tuberculosis": ["cough", "fever", "night_sweats", "weight_loss", "chest_pain"],
+    "Diabetes": ["frequent_urination", "excessive_thirst", "fatigue", "weight_loss", "vision_problem"],
+    "Thyroid": ["fatigue", "weight_loss", "constipation", "cold", "swelling_neck"],
+    "Covid-19": ["fever", "cough", "fatigue", "sore_throat", "breathlessness", "loss_of_appetite"],
+    "HIV/AIDS": ["fatigue", "weight_loss", "swollen_lymph_nodes", "fever", "night_sweats"],
+    "Brain Tumor": ["headache", "vision_problem", "seizures", "speech_difficulty", "memory_loss"],
+    "Blood Clotting Disorder": ["unexplained_bleeding", "fatigue", "bleeding_gums", "joint_pain"]
 }
 
-# Health tips data
+disease_explanations = {
+    "Malaria": "Mosquito-borne disease caused by Plasmodium parasites.",
+    "Dengue": "Viral infection from Aedes mosquitoes causing high fever, pain.",
+    "Chickenpox": "Highly contagious viral disease with rash and blisters.",
+    "Typhoid": "Bacterial infection due to contaminated food or water.",
+    "Pneumonia": "Lung inflammation caused by bacterial or viral infections.",
+    "Cancer": "Uncontrolled abnormal cell growth, may affect any organ.",
+    "Tuberculosis": "Chronic bacterial lung infection, spreads via droplets.",
+    "Diabetes": "High blood sugar levels due to insulin problems.",
+    "Thyroid": "Hormonal imbalance affecting metabolism and mood.",
+    "Covid-19": "Respiratory disease caused by coronavirus SARS-CoV-2.",
+    "HIV/AIDS": "Virus attacking immune system, transmitted through blood/fluids.",
+    "Brain Tumor": "Abnormal growth in brain cells affecting cognition and motor functions.",
+    "Blood Clotting Disorder": "Genetic or acquired conditions affecting normal blood clotting."
+}
+
 health_tips = {
-    "Malaria": ["Use mosquito nets.", "Avoid stagnant water.", "Use mosquito repellents."],
-    "Diabetes": ["Monitor blood sugar levels.", "Exercise regularly.", "Eat low sugar foods."],
-    "Cold": ["Drink warm fluids.", "Rest well.", "Use steam inhalation."],
-    "Flu": ["Get vaccinated.", "Stay hydrated.", "Avoid crowded places."],
-    "Typhoid": ["Drink clean water.", "Maintain hygiene.", "Eat cooked food."]
+    "Malaria": "Use mosquito nets and repellents. Stay hydrated.",
+    "Dengue": "Avoid stagnant water. Take rest and drink fluids.",
+    "Chickenpox": "Avoid scratching. Use calamine lotion and stay isolated.",
+    "Typhoid": "Drink boiled water. Eat light, nutritious food.",
+    "Pneumonia": "Take antibiotics if bacterial. Rest and stay warm.",
+    "Cancer": "Regular screening. Healthy lifestyle. Follow treatment strictly.",
+    "Tuberculosis": "Adhere to full TB treatment course. Cover coughs.",
+    "Diabetes": "Avoid sugary foods. Regular exercise and monitor glucose.",
+    "Thyroid": "Regular checkups. Maintain a balanced iodine-rich diet.",
+    "Covid-19": "Wear masks. Sanitize hands. Isolate when sick.",
+    "HIV/AIDS": "Take antiretroviral drugs regularly. Practice safe methods.",
+    "Brain Tumor": "Follow medical imaging & surgery plans. Rest needed.",
+    "Blood Clotting Disorder": "Avoid injuries. Use prescribed anticoagulants properly."
 }
 
-def send_email(receiver_email, subject, content):
-    sender_email = st.secrets["email"]
-    password = st.secrets["password"]
-    msg = EmailMessage()
-    msg.set_content(content)
-    msg["Subject"] = subject
-    msg["From"] = sender_email
-    msg["To"] = receiver_email
-    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
-        smtp.login(sender_email, password)
-        smtp.send_message(msg)
+hospital_data = [
+    {"name": "Apollo Hospitals", "location": "Hyderabad", "contact": "040-23607777"},
+    {"name": "AIIMS", "location": "Delhi", "contact": "011-26588500"},
+    {"name": "Fortis Healthcare", "location": "Bangalore", "contact": "080-66214444"},
+]
 
-st.set_page_config(page_title="Disease Prediction App", layout="centered")
-st.title("🤖 AI Disease Prediction & Care Assistant")
+# --------------------------
+# UI Setup
+# --------------------------
+st.set_page_config(page_title="Healthcare Predictor", layout="wide")
+st.title("🧠 Disease Prediction & Report Generator")
 
-# Tabs for better layout
-tab1, tab2 = st.tabs(["📝 Health Form", "🔍 Prediction Result"])
+col1, col2 = st.columns(2)
 
-with tab1:
-    with st.form("disease_form"):
-        name = st.text_input("👤 Your Name")
-        age = st.number_input("🎂 Age", min_value=1, max_value=120)
-        gender = st.radio("🚻 Gender", ["Male", "Female", "Other"], horizontal=True)
-        symptoms = st.text_area("😷 Enter your symptoms (comma-separated)")
-        city = st.text_input("🏙️ City")
-        email = st.text_input("📧 Email to receive report")
-        submitted = st.form_submit_button("🔍 Predict Disease")
+with col1:
+    name = st.text_input("👤 Name")
+    age = st.number_input("🎂 Age", 1, 120)
+    email = st.text_input("📧 Email")
 
-if submitted:
-    symptom_list = [s.strip().lower() for s in symptoms.split(",")]
-    matched_disease = None
+with col2:
+    gender = st.selectbox("🚻 Gender", ["Male", "Female", "Other"])
+    location = st.selectbox("🏙️ Location", ["Hyderabad", "Delhi", "Bangalore", "Other"])
+    date = datetime.now().strftime("%Y-%m-%d")
+    st.markdown(f"🗓️ **Date:** `{date}`")
 
-    for disease in disease_info:
-        if disease.lower() in symptoms.lower():
-            matched_disease = disease
-            break
+st.markdown("### 🩺 Select Your Symptoms")
+selected_symptoms = st.multiselect("Choose from the list:", symptoms_list)
 
-    if matched_disease:
-        explanation = disease_info[matched_disease]
-        with tab2:
-            st.markdown(f"""
-                <div style='padding:10px; background-color:#e0f7fa; border-radius:10px;'>
-                    <h3 style='color:#00796b;'>🎯 <u>Predicted Disease:</u> {matched_disease}</h3>
-                    <p><b>📘 Cause:</b> {explanation}</p>
-                </div>
-            """, unsafe_allow_html=True)
-
-            if matched_disease in health_tips:
-                st.markdown(f"""
-                <div style='border:2px solid #4caf50; padding:10px; border-radius:10px; background-color:#e8f5e9;'>
-                    <h4>💡 <u>Health Tips for {matched_disease}</u></h4>
-                    <ul>
-                        {''.join([f"<li>{tip}</li>" for tip in health_tips[matched_disease]])}
-                    </ul>
-                </div>
-                """, unsafe_allow_html=True)
-
-            st.subheader("🏥 Recommended Hospitals")
-            input_city = city.lower().strip()
-            matched_hospitals = [h for h in hospital_data if input_city and input_city in h["location"].lower()]
-            hospitals_to_show = matched_hospitals if matched_hospitals else hospital_data
-
-            for hospital in hospitals_to_show:
-                st.markdown(f"""
-                    - 🏥 **{hospital['name']}**  
-                      📍 Location: *{hospital['location']}*  
-                      ☎️ Contact: `{hospital['contact']}`
-                """)
-
-            # Report
-            report = {
-                "Name": name,
-                "Age": age,
-                "Gender": gender,
-                "Symptoms": symptom_list,
-                "Predicted Disease": matched_disease,
-                "Explanation": explanation,
-                "City": city
-            }
-            report_json = json.dumps(report, indent=4)
-
-            col1, col2 = st.columns(2)
-            with col1:
-                st.download_button("⬇️ Download Report", report_json, file_name="report.json")
-            with col2:
-                if email:
-                    send_email(email, "Your Disease Prediction Report", report_json)
-                    st.success("📩 Report sent to your email!")
+# --------------------------
+# Predict Disease
+# --------------------------
+if st.button("🔍 Predict Disease"):
+    if len(selected_symptoms) < 2:
+        st.warning("⚠️ Please select at least 2 symptoms.")
     else:
-        with tab2:
-            st.error("❌ No disease match found. Please recheck your symptoms.")
+        st.session_state.prev_symptoms = selected_symptoms  # Save history
+
+        matched_disease = None
+        highest_score = 0
+
+        for disease, symptoms in disease_symptom_map.items():
+            match_count = len(set(symptoms) & set(selected_symptoms))
+            score = match_count / len(symptoms)
+            if score > highest_score and match_count >= 2:
+                highest_score = score
+                matched_disease = disease
+
+        if matched_disease:
+            explanation = disease_explanations.get(matched_disease, "Information unavailable.")
+            tips = health_tips.get(matched_disease, "General rest and hydration advised.")
+
+            st.success(f"🎯 **Predicted Disease:** {matched_disease}")
+            st.info(f"📚 **Cause:** {explanation}")
+            st.warning(f"💡 **Health Tip:** {tips}")
+
+            st.markdown("### 🏥 Recommended Hospitals")
+            filtered_hospitals = [h for h in hospital_data if h['location'] == location]
+            if not filtered_hospitals:
+                filtered_hospitals = hospital_data  # fallback
+
+            for i, hospital in enumerate(filtered_hospitals, 1):
+                st.markdown(f"{i}. **{hospital['name']}**, {hospital['location']} — 📞 {hospital['contact']}")
+
+            report = f"""
+Healthcare Prediction Report
+----------------------------
+Name: {name}
+Age: {age}
+Gender: {gender}
+Email: {email}
+Location: {location}
+Date: {date}
+
+Symptoms: {', '.join(selected_symptoms)}
+Predicted Disease: {matched_disease}
+Cause: {explanation}
+Health Tip: {tips}
+
+Top Hospitals:
+"""
+            for i, h in enumerate(filtered_hospitals, 1):
+                report += f"{i}. {h['name']} - {h['location']} ({h['contact']})\n"
+
+            st.download_button("⬇️ Download Report", report, file_name="healthcare_report.txt")
+
+            # Send Email
+            if email:
+                try:
+                    msg = MIMEText(report)
+                    msg['Subject'] = 'Healthcare Prediction Report'
+                    msg['From'] = "your_email@gmail.com"
+                    msg['To'] = email
+
+                    with smtplib.SMTP("smtp.gmail.com", 587) as server:
+                        server.starttls()
+                        server.login("your_email@gmail.com", "your_password")  # Use app password
+                        server.send_message(msg)
+
+                    st.success(f"📧 Report sent to {email}")
+                except Exception as e:
+                    st.error(f"❌ Email send failed: {e}")
+        else:
+            st.error("❌ Could not confidently predict the disease. Try selecting more symptoms.")
+
+# --------------------------
+# Previous Symptoms Section
+# --------------------------
+if st.session_state.prev_symptoms:
+    st.markdown("### 📌 Previously Selected Symptoms")
+    st.code(", ".join(st.session_state.prev_symptoms))
