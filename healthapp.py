@@ -2,19 +2,24 @@ import streamlit as st
 from datetime import datetime
 import smtplib
 from email.mime.text import MIMEText
-import matplotlib.pyplot as plt
-import seaborn as sns
-import pandas as pd
 
-# ------------------ Data ------------------
-symptoms_list = [
+# ---------- Session State ----------
+if "prev_symptoms" not in st.session_state:
+    st.session_state.prev_symptoms = []
+
+# ---------- Configuration ----------
+st.set_page_config(page_title="🧠 Healthcare Predictor", layout="wide")
+st.title("🧬 Smart Disease Predictor & Report Generator")
+
+# ---------- Symptoms and Disease Mappings ----------
+symptoms_list = sorted([
     "fever", "headache", "fatigue", "nausea", "vomiting", "cough", "cold", "muscle_pain",
     "joint_pain", "rash", "abdominal_pain", "loss_of_appetite", "diarrhea", "constipation",
     "chills", "sore_throat", "weight_loss", "night_sweats", "breathlessness", "chest_pain",
     "vision_problem", "excessive_thirst", "frequent_urination", "bleeding_gums",
     "unexplained_bleeding", "itching", "yellow_skin", "swollen_lymph_nodes",
     "seizures", "speech_difficulty", "paralysis", "confusion", "memory_loss"
-]
+])
 
 disease_symptom_map = {
     "Malaria": ["fever", "chills", "sweating", "headache", "nausea", "vomiting", "muscle_pain"],
@@ -38,87 +43,94 @@ disease_explanations = {
     "Chickenpox": "Highly contagious viral disease with rash and blisters.",
     "Typhoid": "Bacterial infection due to contaminated food or water.",
     "Pneumonia": "Lung inflammation caused by bacterial or viral infections.",
-    "Cancer": "Uncontrolled abnormal cell growth that may affect any organ.",
+    "Cancer": "Uncontrolled abnormal cell growth, may affect any organ.",
     "Tuberculosis": "Chronic bacterial lung infection, spreads via droplets.",
     "Diabetes": "High blood sugar levels due to insulin problems.",
     "Thyroid": "Hormonal imbalance affecting metabolism and mood.",
     "Covid-19": "Respiratory disease caused by coronavirus SARS-CoV-2.",
-    "HIV/AIDS": "Virus attacking immune system, transmitted through blood/fluids.",
-    "Brain Tumor": "Abnormal growth in brain cells affecting cognition and motor functions.",
+    "HIV/AIDS": "Virus attacking immune system, transmitted through fluids.",
+    "Brain Tumor": "Abnormal brain cell growth affecting cognition.",
     "Blood Clotting Disorder": "Conditions affecting normal blood clotting."
 }
 
-health_tips = {
-    "Malaria": "Use mosquito nets, avoid stagnant water, and take antimalarial meds if prescribed.",
-    "Dengue": "Stay hydrated, avoid mosquito bites, and seek medical care for severe symptoms.",
-    "Chickenpox": "Rest, avoid scratching, apply calamine lotion, and stay isolated.",
-    "Typhoid": "Drink clean water, take antibiotics as prescribed, and maintain hygiene.",
-    "Pneumonia": "Rest, drink fluids, use prescribed antibiotics, avoid smoking.",
-    "Cancer": "Regular screening, healthy diet, avoid tobacco, early detection helps.",
-    "Tuberculosis": "Complete antibiotic course, cover mouth, and regular check-ups.",
-    "Diabetes": "Eat balanced meals, exercise regularly, monitor blood sugar levels.",
-    "Thyroid": "Follow medication schedule, eat iodine-rich food, regular checkups.",
-    "Covid-19": "Wear masks, stay isolated, monitor oxygen levels, stay hydrated.",
-    "HIV/AIDS": "Use protection, avoid sharing needles, and maintain a healthy immune system.",
-    "Brain Tumor": "Monitor neurological signs, follow treatment plan, and reduce stress.",
-    "Blood Clotting Disorder": "Avoid injury, regular monitoring, and follow prescribed treatment."
+disease_tips = {
+    "Malaria": "Use mosquito nets and take antimalarials.",
+    "Dengue": "Rest, hydration, and monitor platelet count.",
+    "Chickenpox": "Use calamine lotion, rest, avoid scratching.",
+    "Typhoid": "Take antibiotics as prescribed. Hydrate well.",
+    "Pneumonia": "Antibiotics, oxygen support if needed, rest.",
+    "Cancer": "Early detection, chemo/radiation, regular consult.",
+    "Tuberculosis": "Complete full TB regimen, avoid exposure.",
+    "Diabetes": "Manage with diet, exercise, insulin/orals.",
+    "Thyroid": "Monitor hormone levels. Medications as needed.",
+    "Covid-19": "Isolation, oxygen support, symptomatic care.",
+    "HIV/AIDS": "Antiretrovirals, immunity support, hygiene.",
+    "Brain Tumor": "Surgery, radiation, neuro consults.",
+    "Blood Clotting Disorder": "Avoid injury, meds to thin blood."
 }
 
 hospital_data = [
     {"name": "Apollo Hospitals", "location": "Hyderabad", "contact": "040-23607777"},
     {"name": "AIIMS", "location": "Delhi", "contact": "011-26588500"},
     {"name": "Fortis Healthcare", "location": "Bangalore", "contact": "080-66214444"},
+    {"name": "Care Hospitals", "location": "Hyderabad", "contact": "040-30417777"},
+    {"name": "KIMS", "location": "Secunderabad", "contact": "040-44885000"}
 ]
 
-# ------------------ UI ------------------
-st.set_page_config(page_title="🩺 AI Healthcare Predictor", layout="wide")
-st.title("🧠 AI-Powered Disease Predictor")
-st.markdown("_By analyzing your symptoms, we provide disease prediction, health tips, hospital info, and reports._")
-
-# ------------------ Form ------------------
-with st.form("health_form"):
+# ---------- Step 1: User Info ----------
+with st.expander("📋 Step 1: Enter Patient Information", expanded=True):
     col1, col2 = st.columns(2)
-
     with col1:
-        name = st.text_input("👤 Name")
-        age = st.number_input("🎂 Age", min_value=1, max_value=120, step=1)
-        email = st.text_input("📧 Email Address")
+        name = st.text_input("👤 Full Name")
+        age = st.number_input("🎂 Age", 1, 120)
+        email = st.text_input("📧 Email")
     with col2:
         gender = st.selectbox("🚻 Gender", ["Male", "Female", "Other"])
-        city = st.text_input("🏙️ Your City (Optional)")
+        city = st.text_input("🏙️ Your City")
         date = datetime.now().strftime("%Y-%m-%d")
-        st.markdown(f"🗓️ **Date:** {date}")
+        st.markdown(f"🗓️ Date: `{date}`")
 
-    selected_symptoms = st.multiselect("### 🩺 Select Symptoms", symptoms_list)
-    submitted = st.form_submit_button("🔍 Predict Disease")
+# ---------- Step 2: Symptoms ----------
+with st.expander("🤒 Step 2: Select Your Symptoms", expanded=True):
+    selected_symptoms = st.multiselect("🔎 Search and select your symptoms", symptoms_list)
+    if selected_symptoms:
+        st.success(f"✅ {len(selected_symptoms)} symptom(s) selected.")
+    if st.session_state.prev_symptoms:
+        st.markdown("🕓 **Previous Session Symptoms:**")
+        st.code(", ".join(st.session_state.prev_symptoms))
 
-# ------------------ Prediction ------------------
-if submitted:
+# ---------- Step 3: Submit and Predict ----------
+if st.button("🚑 Predict Disease"):
     if len(selected_symptoms) < 2:
         st.warning("⚠️ Please select at least 2 symptoms.")
     else:
-        matched_disease = None
-        highest_score = 0
+        st.session_state.prev_symptoms = selected_symptoms
 
+        # Match logic
+        matched_disease, highest_score = None, 0
         for disease, symptoms in disease_symptom_map.items():
-            match_count = len(set(symptoms) & set(selected_symptoms))
-            score = (2 * match_count) / (len(symptoms) + len(selected_symptoms))
-            if score > highest_score and match_count >= 2:
-                highest_score = score
+            match = len(set(symptoms) & set(selected_symptoms))
+            score = (2 * match) / (len(symptoms) + len(selected_symptoms))
+            if score > highest_score and match >= 2:
                 matched_disease = disease
+                highest_score = score
 
         if matched_disease:
-            st.success(f"🎯 **Predicted Disease:** {matched_disease}")
-            st.info(f"📚 **Cause:** {disease_explanations[matched_disease]}")
-            st.warning(f"💡 **Health Tips:** {health_tips[matched_disease]}")
+            explanation = disease_explanations.get(matched_disease, "Not available.")
+            tip = disease_tips.get(matched_disease, "No tip available.")
 
-            st.markdown("### 🏥 Recommended Hospitals")
-            filtered_hospitals = [h for h in hospital_data if city.lower() in h["location"].lower()] if city else hospital_data
-            for h in filtered_hospitals:
-                st.markdown(f"**{h['name']}**, {h['location']} — 📞 {h['contact']}")
+            st.balloons()
+            st.markdown("## 🧾 Prediction Summary")
+            st.metric("Disease Predicted", matched_disease)
+            st.success(f"📚 **Cause**: {explanation}")
+            st.info(f"💡 **Health Tip**: {tip}")
 
-            # Report
-            report_text = f"""
+            with st.expander("🏥 Recommended Hospitals"):
+                filtered = [h for h in hospital_data if city.lower() in h["location"].lower()]
+                for h in filtered or hospital_data:
+                    st.markdown(f"- **{h['name']}**, {h['location']} — 📞 {h['contact']}")
+
+            report = f"""
 Healthcare Prediction Report
 ----------------------------
 Name: {name}
@@ -126,20 +138,19 @@ Age: {age}
 Gender: {gender}
 Email: {email}
 Date: {date}
-City: {city}
 
 Symptoms: {', '.join(selected_symptoms)}
 Predicted Disease: {matched_disease}
-Explanation: {disease_explanations[matched_disease]}
-Health Tips: {health_tips[matched_disease]}
+Explanation: {explanation}
+Health Tip: {tip}
 """
-            st.download_button("⬇️ Download Report", report_text, file_name="healthcare_report.txt")
+            st.download_button("⬇️ Download Text Report", report, file_name="healthcare_report.txt")
 
-            # Send Email
             if email:
                 try:
-                    msg = MIMEText(report_text, "plain")
-                    msg['Subject'] = 'Your Healthcare Disease Prediction Report'
+                    html_msg = f"<h3>{matched_disease}</h3><p><b>Cause:</b> {explanation}<br><b>Tip:</b> {tip}</p>"
+                    msg = MIMEText(html_msg, "html")
+                    msg['Subject'] = '🧬 Your Healthcare Prediction Report'
                     msg['From'] = st.secrets["email"]
                     msg['To'] = email
 
@@ -148,23 +159,8 @@ Health Tips: {health_tips[matched_disease]}
                         server.login(st.secrets["email"], st.secrets["password"])
                         server.send_message(msg)
 
-                    st.success(f"📧 Report sent to **{email}**")
+                    st.success(f"📧 Email sent to {email}")
                 except Exception as e:
-                    st.error(f"❌ Email failed: {e}")
+                    st.error(f"Email failed: {e}")
         else:
-            st.error("❌ Couldn't confidently predict disease. Try different symptoms.")
-
-# ------------------ Charts ------------------
-st.markdown("### 📊 Symptom-Disease Frequency Visualization")
-df_chart = pd.DataFrame([
-    {"Disease": d, "Symptom": s}
-    for d, symptoms in disease_symptom_map.items()
-    for s in symptoms
-])
-symptom_counts = df_chart['Symptom'].value_counts().reset_index()
-symptom_counts.columns = ["Symptom", "Frequency"]
-
-fig, ax = plt.subplots(figsize=(12, 4))
-sns.barplot(x="Symptom", y="Frequency", data=symptom_counts.head(15), ax=ax, palette="coolwarm")
-plt.xticks(rotation=45)
-st.pyplot(fig)
+            st.error("❌ Unable to predict. Try more symptoms.")
