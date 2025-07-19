@@ -22,12 +22,33 @@ disease_symptom_map = {
     "Cancer": ["weight_loss", "fatigue", "unexplained_bleeding", "vision_problem", "swollen_lymph_nodes"],
     "Tuberculosis": ["cough", "fever", "night_sweats", "weight_loss", "chest_pain"],
     "Diabetes": ["frequent_urination", "excessive_thirst", "fatigue", "weight_loss", "vision_problem"],
-    "Thyroid": ["fatigue", "weight_loss", "constipation", "cold"],
+    "Thyroid": ["fatigue", "weight_gain", "cold_sensitivity", "dry_skin", "hair_loss"],
     "Covid-19": ["fever", "cough", "fatigue", "sore_throat", "breathlessness", "loss_of_appetite"],
     "HIV/AIDS": ["fatigue", "weight_loss", "swollen_lymph_nodes", "fever", "night_sweats"],
     "Brain Tumor": ["headache", "vision_problem", "seizures", "speech_difficulty", "memory_loss"],
-    "Blood Clotting Disorder": ["unexplained_bleeding", "fatigue", "bleeding_gums", "joint_pain"]
+    "Blood Clotting Disorder": ["unexplained_bleeding", "fatigue", "bleeding_gums", "joint_pain"],
+    "Asthma": ["wheezing", "breathlessness", "chest_pain", "cough", "fatigue"],
+    "Hypertension": ["headache", "chest_pain", "vision_problem", "fatigue"],
+    "Anemia": ["fatigue", "pale_skin", "shortness_of_breath", "dizziness"],
+    "Migraine": ["headache", "nausea", "sensitivity_to_light", "vomiting", "vision_problem"],
+    "Parkinson's Disease": ["tremors", "slow_movement", "balance_problem", "confusion"],
+    "Stroke": ["paralysis", "speech_difficulty", "confusion", "memory_loss", "dizziness"],
+    "Epilepsy": ["seizures", "confusion", "memory_loss"],
+    "Arthritis": ["joint_pain", "swelling_legs", "fatigue"],
+    "PCOS": ["irregular_periods", "acne", "weight_gain", "hair_loss"],
+    "Depression": ["fatigue", "sleep_disturbance", "weight_loss", "depression"],
+    "Anxiety Disorder": ["anxiety", "sweating", "restlessness", "sleep_disturbance"],
+    "Schizophrenia": ["hallucinations", "delusions", "confusion", "memory_loss"],
+    "Cataract": ["blurred_vision", "vision_problem", "faded_colors"],
+    "Conjunctivitis": ["itching", "redness", "eye_pain", "watery_eyes"],
+    "Autism": ["poor_communication", "repetitive_behavior", "speech_difficulty"],
+    "ADHD": ["hyperactivity", "inattention", "impulsiveness", "sleep_disturbance"],
+    "Hepatitis B": ["yellow_skin", "dark_urine", "fatigue", "abdominal_pain", "loss_of_appetite"],
+    "Fibromyalgia": ["muscle_pain", "sleep_disturbance", "fatigue"],
+    "Osteoporosis": ["bone_pain", "back_pain", "fractures"],
+    "Cushing’s Syndrome": ["weight_gain", "round_face", "high_blood_pressure", "fatigue"]
 }
+
 
 disease_explanations = {
     "Malaria": "Mosquito-borne disease caused by Plasmodium parasites.",
