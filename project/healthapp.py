@@ -10,7 +10,13 @@ symptoms_list = [
     "chills", "sore_throat", "weight_loss", "night_sweats", "breathlessness", "chest_pain",
     "vision_problem", "excessive_thirst", "frequent_urination", "bleeding_gums",
     "unexplained_bleeding", "itching", "yellow_skin", "swollen_lymph_nodes",
-    "seizures", "speech_difficulty", "paralysis", "confusion", "memory_loss"
+    "seizures", "speech_difficulty", "paralysis", "confusion", "memory_loss",
+    "dizziness", "tremors", "irregular_heartbeat", "pale_skin", "dry_skin", "swelling_legs",
+    "cold_sensitivity", "hair_loss", "irritability", "weight_gain", "back_pain",
+    "blurred_vision", "hallucinations", "delusions", "anxiety", "depression",
+    "sleep_disturbance", "inattention", "hyperactivity", "bone_pain", "eye_pain",
+    "difficulty_swallowing", "repetitive_behavior", "poor_communication", "skin_discoloration",
+    "dark_urine", "enlarged_spleen", "delayed_growth", "round_face", "acne"
 ]
 
 disease_symptom_map = {
